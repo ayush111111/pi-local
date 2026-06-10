@@ -20,6 +20,17 @@
 
 This is the home of the pi agent harness project including our self extensible coding agent.
 
+## This fork: running pi on local models
+
+This fork ([ayush111111/pi-local](https://github.com/ayush111111/pi-local)) targets pi running fully
+on local models on consumer hardware, with **Gemma 4 12B @ Q4_K_M** as the floor model. Every tool
+schema, prompt, and loop-design decision is checked against what that floor model can reliably
+handle (native single-turn tool calling, but multi-turn collapse, format sensitivity, and
+quantization-driven JSON fragility at small sizes). See `MSLM.md` (Local Model Contract) for the
+normative rules and budgets, and `packages/coding-agent/test/mslm-budgets.test.ts` for the CI checks
+that enforce them (system-prompt + schema token budgets, max tools per turn, flat schema shapes).
+Changes here aim to be the smallest diff from upstream pi that satisfies the contract.
+
 * **[@earendil-works/pi-coding-agent](packages/coding-agent)**: Interactive coding agent CLI
 * **[@earendil-works/pi-agent-core](packages/agent)**: Agent runtime with tool calling and state management
 * **[@earendil-works/pi-ai](packages/ai)**: Unified multi-provider LLM API (OpenAI, Anthropic, Google, …)

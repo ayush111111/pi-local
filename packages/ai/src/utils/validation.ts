@@ -318,7 +318,18 @@ export function validateToolArguments(tool: Tool, toolCall: ToolCall): any {
 			.map((error) => `  - ${formatValidationPath(error)}: ${error.message}`)
 			.join("\n") || "Unknown validation error";
 
-	const errorMessage = `Validation failed for tool "${toolCall.name}":\n${errors}\n\nReceived arguments:\n${JSON.stringify(toolCall.arguments, null, 2)}`;
+	const receivedArguments = truncateForError(JSON.stringify(toolCall.arguments, null, 2));
+
+	const errorMessage = `Validation failed for tool "${toolCall.name}":\n${errors}\n\nReceived arguments:\n${receivedArguments}`;
 
 	throw new Error(errorMessage);
+}
+
+/** Cap on echoed-back content in tool-call error messages (~500 tokens). */
+const ERROR_ECHO_MAX_CHARS = 2000;
+
+/** Truncate a JSON-stringified value before echoing it back in an error message. */
+function truncateForError(text: string): string {
+	if (text.length <= ERROR_ECHO_MAX_CHARS) return text;
+	return `${text.slice(0, ERROR_ECHO_MAX_CHARS)}\n... [truncated, ${text.length - ERROR_ECHO_MAX_CHARS} more chars]`;
 }
