@@ -131,8 +131,18 @@ export function estimateTask(prompt: string, speeds: SpeedProfile = DEFAULT_LOCA
 	return { bucket, p50Seconds, p90Seconds, tier, reasons };
 }
 
-/** Render an estimate as a single status line. */
+/** Coarse, order-of-magnitude duration band — see ESTIMATION.md "Research
+ *  findings": run-to-run token variance (~30x) makes a precise ETA
+ *  unsupportable, so the duration is presented as a ballpark, not a number. */
+function durationBand(seconds: number): string {
+	if (seconds < 60) return "under a minute";
+	if (seconds < 15 * 60) return "minutes";
+	if (seconds < 60 * 60) return "tens of minutes";
+	return "an hour or more";
+}
+
+/** Render an estimate as a single status line, leading with feasibility
+ *  (the load-bearing signal) and treating duration as a rough ballpark. */
 export function formatEstimate(estimate: TaskEstimate): string {
-	const minutes = (seconds: number) => (seconds < 90 ? `${seconds}s` : `~${Math.round(seconds / 60)} min`);
-	return `${minutes(estimate.p50Seconds)} (p90 ${minutes(estimate.p90Seconds)}) · confidence: ${estimate.tier} — ${estimate.reasons[0]}, ${estimate.reasons[1]}`;
+	return `confidence: ${estimate.tier} — ${estimate.reasons[0]}, ${estimate.reasons[1]} · ballpark: ${durationBand(estimate.p50Seconds)}`;
 }

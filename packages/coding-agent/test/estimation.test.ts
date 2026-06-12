@@ -54,10 +54,11 @@ describe("estimateTask", () => {
 });
 
 describe("formatEstimate", () => {
-	it("renders a one-line summary", () => {
+	it("renders a one-line summary, leading with confidence", () => {
 		const line = formatEstimate(estimateTask("fix the failing test"));
-		expect(line).toMatch(/confidence: (green|yellow|red)/);
+		expect(line).toMatch(/^confidence: (green|yellow|red)/);
 		expect(line).toContain("task type: bugfix");
+		expect(line).toContain("ballpark:");
 	});
 });
 
