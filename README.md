@@ -31,6 +31,12 @@ normative rules and budgets, and `packages/coding-agent/test/mslm-budgets.test.t
 that enforce them (system-prompt + schema token budgets, max tools per turn, flat schema shapes).
 Changes here aim to be the smallest diff from upstream pi that satisfies the contract.
 
+Before a task runs, pi can give a quick read on whether the floor model is a good fit for it —
+a feasibility tier (green/yellow/red) plus a ballpark duration, derived from a cold-start table
+of real coding-agent trajectories. See [`ESTIMATION.md`](ESTIMATION.md) for the design, the
+research behind why feasibility (not a precise token/time count) is the signal worth trusting,
+and `packages/coding-agent/src/core/estimation/` for the implementation.
+
 * **[@earendil-works/pi-coding-agent](packages/coding-agent)**: Interactive coding agent CLI
 * **[@earendil-works/pi-agent-core](packages/agent)**: Agent runtime with tool calling and state management
 * **[@earendil-works/pi-ai](packages/ai)**: Unified multi-provider LLM API (OpenAI, Anthropic, Google, …)
