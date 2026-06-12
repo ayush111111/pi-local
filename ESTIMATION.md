@@ -96,6 +96,70 @@ node scripts/build-estimation-table.mjs
   the table so estimates personalize to the user's repo, hardware, and
   prompting style. The public dataset is only the cold-start prior.
 
+## Research findings (literature check, June 2026)
+
+A pass over recent papers/datasets on predicting per-task token cost confirms
+the "tokens measure cost, not progress" caveat above isn't just intuition —
+it's the documented failure mode of the closest prior attempt:
+
+- **["How Do AI Agents Spend Your Money?"](https://arxiv.org/abs/2604.22750)**
+  (Apr 2026) ran 8 frontier models on SWE-bench Verified and tried to have
+  agents predict their own token cost pre-execution. Headline result: **the
+  same (task, model) pair varies up to 30x in total tokens across runs**,
+  driven by input tokens (re-reading context across retry loops), not output.
+  Self-prediction achieves only "weak-to-moderate" correlation — a coarse
+  relative-cost signal at best, never a tight ETA.
+- **["Tokenomics"](https://hf.co/papers/2601.14470)** (Jan 2026) found token
+  spend is dominated by *iterative review/repair cycles*, a property of how
+  the episode unfolds, not of the task description — i.e. not something a
+  static `classifyTask(prompt)` can see in advance.
+- **["Agent psychometrics"](https://arxiv.org/abs/2604.00594)** (Apr 2026)
+  shows the thing that *is* predictable pre-execution: **P(success | task,
+  model)** via IRT over task features + an ability decomposition (model
+  ability × scaffold ability). This is structurally our `tier`, not our
+  `p50Seconds`/`p90Seconds`.
+- **["LLMs Encode How Difficult Problems Are"](https://hf.co/papers/2510.18147)**
+  and **["Beyond Accuracy"](https://hf.co/papers/2601.12951)**: static
+  complexity metrics (AST depth, cyclomatic complexity, path counts) align
+  poorly with LLM-perceived difficulty, and the gap widens as models change.
+  Outcome-derived difficulty (did the floor model actually succeed on similar
+  prompts before) beats structural heuristics.
+
+**Implication:** the duration estimate (`p50Seconds`/`p90Seconds`) is
+inherently order-of-magnitude and will not tighten much no matter how the
+table or buckets are refined — that's a property of the domain, confirmed
+independently. The **feasibility tier is the load-bearing output**; effort
+should go there, not into sharpening token percentiles.
+
+### Suggested changes (P2+)
+
+1. **Lead with the tier, not the time.** In `formatEstimate`, the
+   green/yellow/red verdict + reason should be the headline; the
+   `p50/p90 seconds` should read as "ballpark" (e.g. drop p90 to a coarser
+   bucket like "minutes / tens of minutes / long" rather than a number that
+   implies precision the data can't support).
+2. **P4 ledger should fit feasibility, not tokens.** When local outcomes
+   accumulate, prioritize a small logistic/IRT-style model mapping
+   (bucket, test-oracle present, cross-cutting scope, ...) → observed
+   floor-model success rate. This is the prediction target the literature
+   shows is tractable; a per-bucket token regression is not — don't spend
+   the ledger's first iterations there.
+3. **Don't chase static complexity features for `classifyTask`.** AST/path
+   counts etc. are weakly correlated with actual model difficulty per the
+   above. Keep the keyword-bucket heuristic coarse; let outcome history (P4)
+   refine `successDelta` per bucket instead of adding structural features.
+4. **Turn-count as a secondary, more stable unit.** Several papers point at
+   step/turn count under a bounded loop (cf. `TURN_BUDGET` in MSLM.md R1) as
+   more stable across runs than raw token totals. If P3 wants a
+   "how close to the budget are we" signal, turns-used/turns-budgeted is a
+   better burn-down axis than tokens-used/tokens-estimated.
+5. **No HF dataset gap to fill right now.** Didn't find a dataset pairing
+   per-trial tokens with task-type labels across models better than
+   `yoonholee/terminalbench-trajectories` (already used). `SWE-rebench`
+   ([2505.20411](https://hf.co/papers/2505.20411)) is worth checking for the
+   P4 ledger refresh, but isn't confirmed to carry per-trial token/duration
+   fields the way the terminalbench dump does.
+
 ## Caveats (known, accepted for v0)
 
 - Terminal-Bench is benchmark-flavored (sandboxed, well-specified tasks);
